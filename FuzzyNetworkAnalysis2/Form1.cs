@@ -15,6 +15,7 @@ namespace FuzzyNetworkAnalysis2
         List<FuzzyCustomer> customers = new List<FuzzyCustomer>();
         bool valueChange1 = false;
         bool valueChange2 = false;
+        double R_ = -10, r_ = -10;
         public Form1()
         {
             InitializeComponent();
@@ -71,11 +72,13 @@ namespace FuzzyNetworkAnalysis2
         {
             if(!valueChange2)
                 customers.Add(new FuzzyCustomer());
+            trackBar1.Maximum = customers.Count;
         }
         private void dataGridView2_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
         {
             if(!valueChange2 && customers.Count != 0)
                 customers.RemoveAt(e.RowIndex);
+            trackBar1.Maximum = Math.Max(1, customers.Count);
         }
         private void dataGridView1_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
@@ -107,16 +110,6 @@ namespace FuzzyNetworkAnalysis2
                     }
                     break;
                 case 2:
-                    if (double.TryParse(temp, out double R))
-                    {
-                        works[e.RowIndex].R = R;
-                    }
-                    else
-                    {
-                        dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.R?.ToString() ?? "";
-                    }
-                    break;
-                case 3:
                     if (double.TryParse(temp, out double r))
                     {
                         works[e.RowIndex].r = r;
@@ -124,6 +117,16 @@ namespace FuzzyNetworkAnalysis2
                     else
                     {
                         dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.r?.ToString() ?? "";
+                    }
+                    break;
+                case 3:
+                    if (double.TryParse(temp, out double R))
+                    {
+                        works[e.RowIndex].R = R;
+                    }
+                    else
+                    {
+                        dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.R?.ToString() ?? "";
                     }
                     break;
             }
@@ -149,16 +152,6 @@ namespace FuzzyNetworkAnalysis2
                     }
                     break;
                 case 1:
-                    if (double.TryParse(temp, out double d))
-                    {
-                        customers[e.RowIndex].d = d;
-                    }
-                    else
-                    {
-                        dataGridView2[e.ColumnIndex, e.RowIndex].Value = customers[e.RowIndex].d?.ToString() ?? "";
-                    }
-                    break;
-                case 2:
                     if (double.TryParse(temp, out double D))
                     {
                         customers[e.RowIndex].D = D;
@@ -166,6 +159,16 @@ namespace FuzzyNetworkAnalysis2
                     else
                     {
                         dataGridView2[e.ColumnIndex, e.RowIndex].Value = customers[e.RowIndex].D?.ToString() ?? "";
+                    }
+                    break;
+                case 2:
+                    if (double.TryParse(temp, out double d))
+                    {
+                        customers[e.RowIndex].d = d;
+                    }
+                    else
+                    {
+                        dataGridView2[e.ColumnIndex, e.RowIndex].Value = customers[e.RowIndex].d?.ToString() ?? "";
                     }
                     break;
             }
@@ -186,12 +189,12 @@ namespace FuzzyNetworkAnalysis2
                 return;
             }
             label1.Text = "Вычислить время выполнения проекта";
-
+            #region критический путь R
             List<(int, double)> earlyDeadlineR = new List<(int, double)>();
-            List<List<int>> CriticalTrack = new List<List<int>>();
+            List<List<int>> CriticalTrack = new List<List<int>>() { new List<int>() { works.Min(w => w.Start) ?? 0 } };
             earlyDeadlineR.Add((works.Min(w => w.Start) ?? 0, 0));
             int iterator = 0;
-            while (iterator < works.Count)
+            while (iterator < earlyDeadlineR.Count)
             {
                 for(int i= 0;i < works.Count; i++)
                 {
@@ -213,11 +216,13 @@ namespace FuzzyNetworkAnalysis2
                 }
                 iterator++;
             }
-
+            R_ = earlyDeadlineR.Find(d => d.Item1 == earlyDeadlineR.Max(d2 => d2.Item1)).Item2;
+            #endregion
+            #region критический путь r
             List<(int, double)> earlyDeadliner = new List<(int, double)>();
             earlyDeadliner.Add((works.Min(w => w.Start) ?? 0, 0));
             iterator = 0;
-            while (iterator < works.Count)
+            while (iterator < earlyDeadliner.Count)
             {
                 for (int i = 0; i < works.Count; i++)
                 {
@@ -236,6 +241,62 @@ namespace FuzzyNetworkAnalysis2
                     }
                 }
                 iterator++;
+            }
+            r_ = earlyDeadliner.Find(d => d.Item1 == earlyDeadliner.Max(d2 => d2.Item1)).Item2;
+            #endregion
+            #region оценка совместимости
+            for (int i = 0; i < dataGridView2.RowCount - 1; i++)
+            {
+                if (double.TryParse(dataGridView2[1, i].Value.ToString(), out double Di)){
+                    if (double.TryParse(dataGridView2[2, i].Value.ToString(), out double di))
+                    {
+                        double ri = earlyDeadliner.Last().Item2, Ri = earlyDeadlineR.Last().Item2;
+                        if (di < ri)
+                        {
+                            dataGridView2[3, i].Value = "0";
+                        }else if (Ri < Di)
+                        {
+                            dataGridView2[3, i].Value = "1";
+                        }
+                        else
+                        {
+                            dataGridView2[3, i].Value = (((di * (Ri - ri) - ri * (Di - di)) / (Ri - ri + di - Di) - ri) / (Ri - ri)).ToString("0.##");
+                        }
+                    }
+                }
+            }
+            #endregion
+            #region plot
+            chart1.Series[0].Points.Clear();
+            if (r_ != -10)
+            {
+                chart1.Series[0].Points.AddXY(0, 0);
+                chart1.Series[0].Points.AddXY(r_, 0);
+                chart1.Series[0].Points.AddXY(R_, 1);
+                chart1.Series[0].Points.AddXY(R_ + 5, 1);
+            }
+            #endregion
+        }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            if(trackBar1.Value == 0)
+            {
+                label2.Text = "Заказчик не выбран";
+                chart1.Series[1].Points.Clear();
+            }else if(trackBar1.Value == 1 && customers.Count == 0)
+            {
+                label2.Text = "Заказчик не выбран";
+                chart1.Series[1].Points.Clear();
+            }
+            else
+            {
+                label2.Text = $"Выбран заказчик {dataGridView2[0, trackBar1.Value - 1].Value}";
+                chart1.Series[1].Points.Clear();
+                chart1.Series[1].Points.AddXY(0, 1);
+                chart1.Series[1].Points.AddXY(customers[trackBar1.Value - 1].D ?? 0, 1);
+                chart1.Series[1].Points.AddXY(customers[trackBar1.Value - 1].d ?? 0, 0);
+                chart1.Series[1].Points.AddXY(Math.Max((customers[trackBar1.Value - 1].d ?? 0) + 5, R_ + 5), 0);
             }
         }
     }
