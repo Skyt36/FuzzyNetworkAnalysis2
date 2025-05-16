@@ -185,10 +185,10 @@ namespace FuzzyNetworkAnalysis2
                 failed = failed || work == null || work.Start == null || work.End == null || work.r == null || work.R == null;
             if (failed)
             {
-                label1.Text = "Вычислить время выполнения проекта\n\nВ таблице не должно быть пустых ячеек";
+                label1.Text = "Вычислить время\nвыполнения проекта\n\nВ таблице не должно быть пустых ячеек";
                 return;
             }
-            label1.Text = "Вычислить время выполнения проекта";
+            label1.Text = "Вычислить время\nвыполнения проекта";
             #region критический путь R
             List<(int, double)> earlyDeadlineR = new List<(int, double)>();
             List<List<int>> CriticalTrack = new List<List<int>>() { new List<int>() { works.Min(w => w.Start) ?? 0 } };
@@ -251,16 +251,27 @@ namespace FuzzyNetworkAnalysis2
                     if (double.TryParse(dataGridView2[2, i].Value.ToString(), out double di))
                     {
                         double ri = earlyDeadliner.Last().Item2, Ri = earlyDeadlineR.Last().Item2;
+                        double compatibility;
                         if (di < ri)
                         {
-                            dataGridView2[3, i].Value = "0";
-                        }else if (Ri < Di)
+                            compatibility = 0;
+                        }
+                        else if (Ri < Di)
                         {
-                            dataGridView2[3, i].Value = "1";
+                            compatibility = 1;
                         }
                         else
                         {
-                            dataGridView2[3, i].Value = (((di * (Ri - ri) - ri * (Di - di)) / (Ri - ri + di - Di) - ri) / (Ri - ri)).ToString("0.##");
+                            compatibility = ((di * (Ri - ri) - ri * (Di - di)) / (Ri - ri + di - Di) - ri) / (Ri - ri);
+                        }
+                        dataGridView2[3, i].Value = compatibility.ToString("0.##");
+                        if (double.TryParse(dataGridView2[4,i].Value?.ToString(),out double nedeedCompatibility))
+                        {
+                            dataGridView2[5, i].Value = (nedeedCompatibility <= compatibility) ? '✔' : '✘';
+                        }
+                        else
+                        {
+                            dataGridView2[5, i].Value = "";
                         }
                     }
                 }
