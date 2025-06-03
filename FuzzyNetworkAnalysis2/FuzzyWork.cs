@@ -10,7 +10,7 @@ namespace FuzzyNetworkAnalysis2
     {
         public int? Start {  get; set; }
         public int? End { get; set; }
-        public double? R { get; set; }
-        public double? r { get; set; }
+        public double? r_big { get; set; }
+        public double? r_small { get; set; }
     }
 }

@@ -14,7 +14,6 @@ namespace FuzzyNetworkAnalysis2
         List<FuzzyWork> works = new List<FuzzyWork>();
         List<FuzzyCustomer> customers = new List<FuzzyCustomer>();
         bool valueChange1 = false;
-        bool valueChange2 = false;
         double R_ = -10, r_ = -10;
         public Form1()
         {
@@ -38,8 +37,8 @@ namespace FuzzyNetworkAnalysis2
                     {
                         dataGridView1.Rows[i].Cells[0].Value = works[i]?.Start?.ToString() ?? "";
                         dataGridView1.Rows[i].Cells[1].Value = works[i]?.End?.ToString() ?? "";
-                        dataGridView1.Rows[i].Cells[2].Value = works[i]?.R?.ToString() ?? "";
-                        dataGridView1.Rows[i].Cells[3].Value = works[i]?.r?.ToString() ?? "";
+                        dataGridView1.Rows[i].Cells[2].Value = works[i]?.r_small?.ToString() ?? "";
+                        dataGridView1.Rows[i].Cells[3].Value = works[i]?.r_big?.ToString() ?? "";
                     }
                     valueChange1 = false;
                 }
@@ -67,18 +66,6 @@ namespace FuzzyNetworkAnalysis2
             {
                 works.RemoveAt(e.RowIndex);
             }
-        }
-        private void dataGridView2_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
-        {
-            if(!valueChange2)
-                customers.Add(new FuzzyCustomer());
-            trackBar1.Maximum = customers.Count;
-        }
-        private void dataGridView2_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
-        {
-            if(!valueChange2 && customers.Count != 0)
-                customers.RemoveAt(e.RowIndex);
-            trackBar1.Maximum = Math.Max(1, customers.Count);
         }
         private void dataGridView1_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
@@ -112,77 +99,34 @@ namespace FuzzyNetworkAnalysis2
                 case 2:
                     if (double.TryParse(temp, out double r))
                     {
-                        works[e.RowIndex].r = r;
+                        works[e.RowIndex].r_small = r;
                     }
                     else
                     {
-                        dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.r?.ToString() ?? "";
+                        dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.r_small?.ToString() ?? "";
                     }
                     break;
                 case 3:
                     if (double.TryParse(temp, out double R))
                     {
-                        works[e.RowIndex].R = R;
+                        works[e.RowIndex].r_big = R;
                     }
                     else
                     {
-                        dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.R?.ToString() ?? "";
+                        dataGridView1[e.ColumnIndex, e.RowIndex].Value = works[e.RowIndex]?.r_big?.ToString() ?? "";
                     }
                     break;
             }
             valueChange1 = false;
         }
-        private void dataGridView2_CellValueChanged(object sender, DataGridViewCellEventArgs e)
-        {
-            if (valueChange2 || e.RowIndex == -1)
-                return;
-            string temp = dataGridView2[e.ColumnIndex, e.RowIndex].Value.ToString();
-            valueChange2 = true;
-
-            switch (e.ColumnIndex)
-            {
-                case 0:
-                    if (int.TryParse(temp, out int id))
-                    {
-                        customers[e.RowIndex].id = id;
-                    }
-                    else
-                    {
-                        dataGridView2[e.ColumnIndex, e.RowIndex].Value = customers[e.RowIndex].id?.ToString() ?? "";
-                    }
-                    break;
-                case 1:
-                    if (double.TryParse(temp, out double D))
-                    {
-                        customers[e.RowIndex].D = D;
-                    }
-                    else
-                    {
-                        dataGridView2[e.ColumnIndex, e.RowIndex].Value = customers[e.RowIndex].D?.ToString() ?? "";
-                    }
-                    break;
-                case 2:
-                    if (double.TryParse(temp, out double d))
-                    {
-                        customers[e.RowIndex].d = d;
-                    }
-                    else
-                    {
-                        dataGridView2[e.ColumnIndex, e.RowIndex].Value = customers[e.RowIndex].d?.ToString() ?? "";
-                    }
-                    break;
-            }
-            valueChange2 = false;
-        }
         #endregion
-
         private void button1_Click(object sender, EventArgs e)
         {
             if (works.Count == 0)
                 return;
             bool failed = false;
             foreach (var work in works)
-                failed = failed || work == null || work.Start == null || work.End == null || work.r == null || work.R == null;
+                failed = failed || work == null || work.Start == null || work.End == null || work.r_small == null || work.r_big == null;
             if (failed)
             {
                 label1.Text = "Вычислить время\nвыполнения проекта\n\nВ таблице не должно быть пустых ячеек";
@@ -207,9 +151,9 @@ namespace FuzzyNetworkAnalysis2
                             index = earlyDeadlineR.Count - 1;
                             CriticalTrack.Add(new List<int>());
                         }
-                        if (earlyDeadlineR[iterator].Item2 + works[i].R > earlyDeadlineR[index].Item2)
+                        if (earlyDeadlineR[iterator].Item2 + works[i].r_big > earlyDeadlineR[index].Item2)
                         {
-                            earlyDeadlineR[index] = (earlyDeadlineR[index].Item1, earlyDeadlineR[iterator].Item2 + works[i].R ?? 0);
+                            earlyDeadlineR[index] = (earlyDeadlineR[index].Item1, earlyDeadlineR[iterator].Item2 + works[i].r_big ?? 0);
                             CriticalTrack[index] = CriticalTrack[iterator].Union(new List<int>() { works[i].End ?? 0 }).ToList();
                         }
                     }
@@ -234,9 +178,9 @@ namespace FuzzyNetworkAnalysis2
                             earlyDeadliner.Add((works[i].End ?? 0, 0));
                             index = earlyDeadliner.Count - 1;
                         }
-                        if (earlyDeadliner[iterator].Item2 + works[i].r > earlyDeadliner[index].Item2)
+                        if (earlyDeadliner[iterator].Item2 + works[i].r_small > earlyDeadliner[index].Item2)
                         {
-                            earlyDeadliner[index] = (earlyDeadliner[index].Item1, earlyDeadliner[iterator].Item2 + works[i].r ?? 0);
+                            earlyDeadliner[index] = (earlyDeadliner[index].Item1, earlyDeadliner[iterator].Item2 + works[i].r_small ?? 0);
                         }
                     }
                 }
@@ -245,37 +189,37 @@ namespace FuzzyNetworkAnalysis2
             r_ = earlyDeadliner.Find(d => d.Item1 == earlyDeadliner.Max(d2 => d2.Item1)).Item2;
             #endregion
             #region оценка совместимости
-            for (int i = 0; i < dataGridView2.RowCount - 1; i++)
+            chart1.Series[1].Points.Clear();
+            if (double.TryParse(textBox1.Text, out double d_big) && double.TryParse(textBox2.Text, out double d_small))
             {
-                if (double.TryParse(dataGridView2[1, i].Value.ToString(), out double Di)){
-                    if (double.TryParse(dataGridView2[2, i].Value.ToString(), out double di))
+                if (0 <= d_big && d_big <= d_small)
+                {
+                    chart1.Series[1].Points.AddXY(0, 1);
+                    chart1.Series[1].Points.AddXY(d_big, 1);
+                    chart1.Series[1].Points.AddXY(d_small, 0);
+                    chart1.Series[1].Points.AddXY(d_small + 5, 0);
+                    double ri = earlyDeadliner.Last().Item2, Ri = earlyDeadlineR.Last().Item2;
+                    double copaibabilitycompatibility;
+                    if (d_small < r_)
+                        copaibabilitycompatibility = 0;
+                    else if (d_big > R_)
+                        copaibabilitycompatibility = 100;
+                    else
+                        copaibabilitycompatibility = 100*((d_small * (Ri - ri) - ri * (d_big - d_small)) / (Ri - ri + d_small - d_big) - ri) / (Ri - ri);
+                    if (double.TryParse(textBox3.Text, out double neededCopaibabilitycompatibility))
                     {
-                        double ri = earlyDeadliner.Last().Item2, Ri = earlyDeadlineR.Last().Item2;
-                        double compatibility;
-                        if (di < ri)
-                        {
-                            compatibility = 0;
-                        }
-                        else if (Ri < Di)
-                        {
-                            compatibility = 1;
-                        }
-                        else
-                        {
-                            compatibility = ((di * (Ri - ri) - ri * (Di - di)) / (Ri - ri + di - Di) - ri) / (Ri - ri);
-                        }
-                        dataGridView2[3, i].Value = compatibility.ToString("0.##");
-                        if (double.TryParse(dataGridView2[4,i].Value?.ToString(),out double nedeedCompatibility))
-                        {
-                            dataGridView2[5, i].Value = (nedeedCompatibility <= compatibility) ? '✔' : '✘';
-                        }
-                        else
-                        {
-                            dataGridView2[5, i].Value = "";
-                        }
+                        label5.Text = $"Совместимость проекта {copaibabilitycompatibility.ToString("0.##")}%" +
+                            ((neededCopaibabilitycompatibility <= copaibabilitycompatibility) ? "\nЮлиана одобряет проект" : "\nnЮлиана такое не одобрит");
                     }
+                    else
+                        label5.Text = $"Совместимость проекта {copaibabilitycompatibility.ToString("0.##")}%" +
+                            $"\nНеобходимая совместимость не задана";
                 }
+                else
+                    label5.Text = "Параметры заказчика введены не правильно";
             }
+            else
+                label5.Text = "Параметры заказчика не введены";
             #endregion
             #region plot
             chart1.Series[0].Points.Clear();
@@ -287,28 +231,6 @@ namespace FuzzyNetworkAnalysis2
                 chart1.Series[0].Points.AddXY(R_ + 5, 1);
             }
             #endregion
-        }
-
-        private void trackBar1_Scroll(object sender, EventArgs e)
-        {
-            if(trackBar1.Value == 0)
-            {
-                label2.Text = "Заказчик не выбран";
-                chart1.Series[1].Points.Clear();
-            }else if(trackBar1.Value == 1 && customers.Count == 0)
-            {
-                label2.Text = "Заказчик не выбран";
-                chart1.Series[1].Points.Clear();
-            }
-            else
-            {
-                label2.Text = $"Выбран заказчик {dataGridView2[0, trackBar1.Value - 1].Value}";
-                chart1.Series[1].Points.Clear();
-                chart1.Series[1].Points.AddXY(0, 1);
-                chart1.Series[1].Points.AddXY(customers[trackBar1.Value - 1].D ?? 0, 1);
-                chart1.Series[1].Points.AddXY(customers[trackBar1.Value - 1].d ?? 0, 0);
-                chart1.Series[1].Points.AddXY(Math.Max((customers[trackBar1.Value - 1].d ?? 0) + 5, R_ + 5), 0);
-            }
         }
     }
 }
